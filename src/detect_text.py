@@ -26,6 +26,8 @@ def captch_ex(file_name):
     # for cv3.x.x comment above line and uncomment line below
     image, contours, hierarchy = cv2.findContours(dilated,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
 
+    text = "Detected text: "
+    total_text = []
     for contour in contours:
         # get rectangle bounding contour
         [x, y, w, h] = cv2.boundingRect(contour)
@@ -33,27 +35,24 @@ def captch_ex(file_name):
         # Don't plot small false positives that aren't text
         if w < 35 and h < 35:
             continue
-
+        
         # draw rectangle around contour on original image
         cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 255), 2)
 
         # you can crop image and send to OCR  , false detected will return no text :)
         cropped = img_final[y :y +  h , x : x + w]
+        detected_text = pytesseract.image_to_string(Image.fromarray(cropped))
+        
+        if len(detected_text) > 0:
+            total_text.append(detected_text)
+        
+   	# write original image with added contours to disk
+    if len(total_text) >= 1:
+        print total_text
+        cv2.putText(img, "{}: {}".format(text, total_text), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 3)
+        cv2.imshow('captcha_result', img)
+        cv2.waitKey()
 
-	detected_text =  pytesseract.image_to_string(Image.fromarray(cropped))
-	'''
-        s = file_name + '/crop_' + str(index) + '.jpg' 
-        cv2.imwrite(s , cropped)
-        index = index + 1
-
-        '''
-    	# write original image with added contours to disk
-	if len(detected_text) >= 1:
-		print detected_text
-    		cv2.imshow('captcha_result', img)
-    		cv2.waitKey()
-
- 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--images", required=True,
